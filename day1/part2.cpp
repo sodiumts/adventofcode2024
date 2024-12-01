@@ -3,8 +3,6 @@
 #include <string>
 #include <vector>
 #include <stdexcept>
-#include <ranges>
-#include <cmath>
 #include <chrono>
 #include <numeric>
 #include <unordered_map>
