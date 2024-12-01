@@ -3,11 +3,12 @@
 #include <string>
 #include <vector>
 #include <stdexcept>
-#include <algorithm>
 #include <ranges>
 #include <cmath>
 #include <chrono>
+#include <numeric>
 #include <unordered_map>
+
 int main() {
     auto start = std::chrono::high_resolution_clock::now();
 
@@ -16,43 +17,36 @@ int main() {
     if (!file.is_open()) {
         throw std::runtime_error("failed to open file");
     }
+    
+    std::vector<std::string> lines;
+    std::string line;
+    while(std::getline(file, line)) {
+        lines.push_back(line);
+    }
 
     std::vector<int> firstCol;
-
-    std::string line;
+    firstCol.reserve(lines.size());
     std::unordered_map<int, int> occurences;
-
-    while (std::getline(file, line)) {
-        bool alt = true; 
-        for (auto word : std::views::split(line, std::string_view("   "))) {
-            std::string token(&*word.begin(), std::ranges::distance(word));
-            int value = 0; 
-            try {
-                value = std::stoi(token);
-            } catch(...) {
-                throw std::runtime_error("Failed to parse " + token + " into an int");
-            } 
-            if (alt) {
-                firstCol.push_back(value);
-            } else {
-                occurences[value]++;
-            }
-            alt = !alt;
-        }
-    }
     
-    std::sort(firstCol.begin(), firstCol.end());
-
-    int similarityScore = 0;
-    for (int i = 0; i < firstCol.size(); i++) {
-        similarityScore += firstCol[i] * occurences[firstCol[i]];
+    for (auto l : lines) {
+        auto position = l.find_first_of(" \t");
+        auto leftVal = std::stoi(l.substr(0, position));
+        auto rightVal = std::stoi(l.substr(position + 1));
+        firstCol.push_back(leftVal);
+        occurences[rightVal]++;
     }
+
+    int similarityScore = std::accumulate(firstCol.begin(), firstCol.end(), 0, 
+                             [&occurences](int accumulator, int value) {
+                                            return accumulator + value * occurences[value];
+                                          });
+    
     std::cout << "Similarity score: " << similarityScore << std::endl;
     
     auto end = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
     std::cout << "Time taken: " << duration.count() << " nanoseconds = " << duration.count() / 1e6 << " milliseconds "<< std::endl;
-
+    file.close();
     return 0;
 }
 
