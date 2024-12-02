@@ -13,16 +13,11 @@
 bool safe_numbers(std::vector<int> &numbers) {
     bool lastGoingDown = false;
     for (int i = 0; i < numbers.size() - 1; i++) {
-        int difference = numbers[i] - numbers[i + 1];
+        int difference = numbers[i + 1] - numbers[i];
         int goingDown = difference < 0; 
 
         if (i != 0) {
             if (lastGoingDown != goingDown) {
-                if (i == numbers.size() - 2) {
-                    numbers.pop_back();
-                } else {
-                    numbers.erase(numbers.begin() + i);
-                }
                 return false;
             }
             lastGoingDown = goingDown;
@@ -31,11 +26,6 @@ bool safe_numbers(std::vector<int> &numbers) {
         }
 
         if (std::abs(difference) > 3 || std::abs(difference) < 1) {
-            if (i == numbers.size() - 2) {
-                numbers.pop_back();
-            } else {
-                numbers.erase(numbers.begin() + i);
-            }
             return false;
         }
     }
@@ -74,21 +64,14 @@ int main() {
         std::transform(split.begin(), split.end(), std::back_inserter(nums), 
                         [](const std::string &token) { return std::stoi(token); }
                        );
-        
-        if (safe_numbers(nums)) {
-            for (int num: nums) {
-                std::cout << num << " ";
+    
+        for (int i = 0; i < nums.size(); i++) {
+            std::vector<int> removable = nums;
+            removable.erase(removable.begin() + i);
+            if(safe_numbers(removable)) {
+                safeCounter++;
+                break;
             }
-            std::cout << std::endl;
-            safeCounter++;
-        } else {
-           if(safe_numbers(nums)) {
-               for (int num: nums) {
-                   std::cout << num << " ";
-               }
-               std::cout << std::endl;
-               safeCounter++;
-           }
         }
     }
      
