@@ -9,10 +9,45 @@
 #include <algorithm>
 #include <cmath>
 
+
+bool safe_numbers(std::vector<int> &numbers) {
+    bool lastGoingDown = false;
+    for (int i = 0; i < numbers.size() - 1; i++) {
+        int difference = numbers[i] - numbers[i + 1];
+        int goingDown = difference < 0; 
+
+        if (i != 0) {
+            if (lastGoingDown != goingDown) {
+                if (i == numbers.size() - 2) {
+                    numbers.pop_back();
+                } else {
+                    numbers.erase(numbers.begin() + i);
+                }
+                return false;
+            }
+            lastGoingDown = goingDown;
+        } else {
+            lastGoingDown = goingDown;
+        }
+
+        if (std::abs(difference) > 3 || std::abs(difference) < 1) {
+            if (i == numbers.size() - 2) {
+                numbers.pop_back();
+            } else {
+                numbers.erase(numbers.begin() + i);
+            }
+            return false;
+        }
+    }
+
+
+    return true;
+}
+
 int main() {
     auto start = std::chrono::high_resolution_clock::now();
 
-    std::ifstream file("test.txt");
+    std::ifstream file("input.txt");
 
     if (!file.is_open()) {
         throw std::runtime_error("failed to open file");
@@ -39,61 +74,21 @@ int main() {
         std::transform(split.begin(), split.end(), std::back_inserter(nums), 
                         [](const std::string &token) { return std::stoi(token); }
                        );
-        bool isSafe = true;
-        int dampened = 1;
-        bool lastGoingDown = false;
-        bool lastFirstDampened = false;
-        for(int i = 0; i < nums.size() - 1; i++) { 
-            int difference = nums[i] - nums[i + 1];
-            int goingDown = difference < 0;
-            if (i != 0 && !lastFirstDampened) {
-                if (lastGoingDown != goingDown) {
-                    dampened--;
-                    if (dampened < 0){
-                        isSafe = false;
-                        break;
-                    }
-                    difference = nums[i - 1] - nums[i + 1];
-                    goingDown = difference < 0;
-                    if (lastGoingDown != goingDown) {
-                        isSafe = false;
-                        break;
-                    }
-                }
-                lastGoingDown = goingDown;
-            } else {
-                lastGoingDown = goingDown;
-                lastFirstDampened = false;
-            }
-            
-
-            if (std::abs(difference) > 3 || std::abs(difference) < 1) {
-                dampened--;
-
-                if (i + 1 == nums.size() && dampened >= 0) {
-                    break;
-                } 
-                if (i == 0) {
-                    lastFirstDampened = true;
-                    continue;
-                }
-                if (dampened < 0){
-                    isSafe = false;
-                    break;
-                }                
-                difference = nums[i - 1] - nums[i + 1];
-                if (std::abs(difference) > 3 || std::abs(difference) < 1) {
-                    isSafe = false;
-                    break;
-                }
-            }
-        }    
-        if(isSafe) {
+        
+        if (safe_numbers(nums)) {
             for (int num: nums) {
                 std::cout << num << " ";
             }
             std::cout << std::endl;
             safeCounter++;
+        } else {
+           if(safe_numbers(nums)) {
+               for (int num: nums) {
+                   std::cout << num << " ";
+               }
+               std::cout << std::endl;
+               safeCounter++;
+           }
         }
     }
      
