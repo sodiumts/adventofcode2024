@@ -6,7 +6,7 @@
 #include <chrono>
 #include <cmath>
 #include <cctype>
-
+#include <utility>
 
 bool isNum(const std::string &num) {
     for (char c: num) {
@@ -36,6 +36,22 @@ int sumResult(const std::vector<std::string> &lines) {
             dontPositions.push_back(dontPos);
             dontPos += 7;
         }
+
+        std::vector<std::pair<int, int>> dontRanges;
+        for (int dont: dontPositions) {
+            for (int dos: doPositions) {
+                if (dont < dos) {
+                    dontRanges.push_back(std::make_pair(dont, dos));
+                    break;
+                }
+            }
+        }
+        
+        std::cout << "Dont ranges: ";
+        for (auto range: dontRanges) {
+            std::cout << "[" << range.first << "," << range.second << "], ";
+        }
+        std::cout << std::endl;
 
         std::cout << "doPos: ";
         for (int p: doPositions) {
