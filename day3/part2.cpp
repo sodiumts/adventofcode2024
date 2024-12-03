@@ -21,7 +21,36 @@ int sumResult(const std::vector<std::string> &lines) {
     int result = 0;
     for (const auto &line: lines) {
         std::size_t pos = 0;
+        std::size_t doPos = 0;
+        std::size_t dontPos = 0;
+        bool mulEnabled = true;
+        
+        std::vector<int> doPositions;
+        while ((doPos = line.find("do()", doPos)) != std::string::npos) {
+            doPositions.push_back(doPos);
+            doPos += 4;
+        }
+
+        std::vector<int> dontPositions;
+        while ((dontPos = line.find("don't()", dontPos)) != std::string::npos) {
+            dontPositions.push_back(dontPos);
+            dontPos += 4;
+        }
+
+        std::cout << "doPos: ";
+        for (int p: doPositions) {
+            std::cout << p << ", ";
+        }
+        std::cout << std::endl;
+        
+        std::cout << "dontPos: ";
+        for (int p: dontPositions) {
+            std::cout << p << ", ";
+        }
+        std::cout << std::endl;
+
         while ((pos = line.find("mul(", pos)) != std::string::npos) {
+            
             std::size_t startP = pos + 4;
             std::size_t endP = line.find(')', startP);
 
@@ -29,7 +58,7 @@ int sumResult(const std::vector<std::string> &lines) {
             std::size_t commaP = content.find(',');
             
             if (commaP == std::string::npos) {
-                std::cout << "missing comma" << std::endl;
+                //std::cout << "missing comma" << std::endl;
                 pos += 4;
                 continue;
             }
@@ -42,7 +71,7 @@ int sumResult(const std::vector<std::string> &lines) {
                 
                 result += first * second;
             } else {
-                std::cout << "String not num: " << firstNum << "    " << secondNum << std::endl;
+                //std::cout << "String not num: " << firstNum << "    " << secondNum << std::endl;
             }
             pos += 4;
         }
