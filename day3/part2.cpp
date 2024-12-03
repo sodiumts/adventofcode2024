@@ -34,7 +34,7 @@ int sumResult(const std::vector<std::string> &lines) {
         std::vector<int> dontPositions;
         while ((dontPos = line.find("don't()", dontPos)) != std::string::npos) {
             dontPositions.push_back(dontPos);
-            dontPos += 4;
+            dontPos += 7;
         }
 
         std::cout << "doPos: ";
