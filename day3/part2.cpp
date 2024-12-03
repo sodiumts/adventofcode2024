@@ -1,4 +1,3 @@
-#include <iostream>
 #include <fstream>
 #include <string>
 #include <vector>
@@ -7,6 +6,7 @@
 #include <cmath>
 #include <cctype>
 #include <utility>
+#include <print>
 
 bool isNum(const std::string &num) {
     for (char c: num) {
@@ -17,80 +17,72 @@ bool isNum(const std::string &num) {
     return true;
 }
 
-int sumResult(const std::vector<std::string> &lines) {
+int sumResult(const std::string &line) {
     int result = 0;
-    for (const auto &line: lines) {
-        std::size_t pos = 0;
-        std::size_t doPos = 0;
-        std::size_t dontPos = 0;
-        bool mulEnabled = true;
-        
-        std::vector<int> doPositions;
-        while ((doPos = line.find("do()", doPos)) != std::string::npos) {
-            doPositions.push_back(doPos);
-            doPos += 4;
-        }
+    std::size_t pos = 0;
+    std::size_t doPos = 0;
+    std::size_t dontPos = 0;
+    bool mulEnabled = true;
 
-        std::vector<int> dontPositions;
-        while ((dontPos = line.find("don't()", dontPos)) != std::string::npos) {
-            dontPositions.push_back(dontPos);
-            dontPos += 7;
-        }
+    std::vector<int> doPositions;
+    while ((doPos = line.find("do()", doPos)) != std::string::npos) {
+        doPositions.push_back(doPos);
+        doPos += 4;
+    }
 
-        std::vector<std::pair<int, int>> dontRanges;
-        for (int dont: dontPositions) {
-            for (int dos: doPositions) {
-                if (dont < dos) {
-                    dontRanges.push_back(std::make_pair(dont, dos));
+    std::vector<int> dontPositions;
+    while ((dontPos = line.find("don't()", dontPos)) != std::string::npos) {
+        dontPositions.push_back(dontPos);
+        dontPos += 7;
+    }
+
+    std::vector<std::pair<int, int>> dontRanges;
+    for (int dont: dontPositions) {
+        for (int dos: doPositions) {
+            if (dont < dos) {
+                dontRanges.push_back(std::make_pair(dont, dos));
+                break;
+            }
+        }
+    }
+    
+    std::print("Don't ranges: ");
+    for (auto range: dontRanges) {
+        std::print("[{0},{1}], ", range.first, range.second);
+    }
+    std::println();
+
+    while ((pos = line.find("mul(", pos)) != std::string::npos) {
+
+        std::size_t startP = pos + 4;
+        std::size_t endP = line.find(')', startP);
+
+        std::string content = line.substr(startP, endP - startP);
+        std::size_t commaP = content.find(',');
+
+        if (commaP == std::string::npos) {
+            pos += 4;
+            continue;
+        }
+        std::string firstNum = content.substr(0, commaP);
+        std::string secondNum = content.substr(commaP + 1);
+
+        if (isNum(firstNum) && isNum(secondNum)) {
+            int first = std::stoi(firstNum);
+            int second = std::stoi(secondNum);
+            bool isBlocked = false;
+            for (auto &range: dontRanges) {
+                if(pos > range.first && pos < range.second) {
+                    isBlocked = true;
                     break;
                 }
             }
-        }
-        
-        std::cout << "Dont ranges: ";
-        for (auto range: dontRanges) {
-            std::cout << "[" << range.first << "," << range.second << "], ";
-        }
-        std::cout << std::endl;
 
-        std::cout << "doPos: ";
-        for (int p: doPositions) {
-            std::cout << p << ", ";
-        }
-        std::cout << std::endl;
-        
-        std::cout << "dontPos: ";
-        for (int p: dontPositions) {
-            std::cout << p << ", ";
-        }
-        std::cout << std::endl;
-
-        while ((pos = line.find("mul(", pos)) != std::string::npos) {
-            
-            std::size_t startP = pos + 4;
-            std::size_t endP = line.find(')', startP);
-
-            std::string content = line.substr(startP, endP - startP);
-            std::size_t commaP = content.find(',');
-            
-            if (commaP == std::string::npos) {
-                //std::cout << "missing comma" << std::endl;
-                pos += 4;
-                continue;
-            }
-            std::string firstNum = content.substr(0, commaP);
-            std::string secondNum = content.substr(commaP + 1);
-
-            if (isNum(firstNum) && isNum(secondNum)) {
-                int first = std::stoi(firstNum);
-                int second = std::stoi(secondNum);
-                
+            if(!isBlocked){
                 result += first * second;
-            } else {
-                //std::cout << "String not num: " << firstNum << "    " << secondNum << std::endl;
-            }
-            pos += 4;
+            } 
         }
+        pos += 4;
     }
     return result;
 }
@@ -105,20 +97,20 @@ int main() {
         throw std::runtime_error("failed to open file");
     }
     
-    std::vector<std::string> lines;
+    std::string lines = "";
     std::string line;
     while(std::getline(file, line)) {
-        lines.push_back(line);
+        lines += line;
     }
     
     int res = sumResult(lines);
 
         
-    std::cout << "mul() result: " << res << std::endl;
-    
+    std::println("mul() result: {0}", res);
+
     auto end = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
-    std::cout << "Time taken: " << duration.count() << " nanoseconds = " << duration.count() / 1e6 << " milliseconds "<< std::endl;
+    std::println("Time taken: {0} nanoseconds = {1} milliseconds", duration.count(), duration.count() / 1e6);
     file.close();
     return 0;
 }
