@@ -13,29 +13,43 @@ int findxmas(const std::vector<std::string> &lines) {
     int xmasCounter = 0;
     for (int l = 0; l < lines.size(); l++) {
         for(int c = 0; c < lines[l].size(); c++) {
-            // Dont care about sequences that start with a or m xmas
-            if (c == 'a' || c == 'm') {
-                break;
-            }
-            std::println("Current char index {0}", c);
             // we only need to check down and diagonals up until the 3rd line from the end
             if (lines.size() - l > 3) {
                 // Only check rays that go down and diagonal to the right
-                if (c < lines[l].size() - 4 && c < 3) {
-                    std::println("check lines down to right {0}", lines[l][c]);
+                if (c < 3) {
                     std::string lineDown = std::string(1,lines[l][c]) + lines[l+1][c] + lines[l+2][c] + lines[l+3][c];
                     std::string lineDiagonalRight = std::string(1, lines[l][c]) + lines[l+1][c+1] + lines[l+2][c+2] + lines[l+3][c+3];
-                    std::println("LineDown: {0}", lineDown);
-                    std::println("LineDiagonalRight: {0}", lineDiagonalRight);
                     if (lineDown == "XMAS" || lineDown == "SAMX")
                         xmasCounter++;
                     
                     if (lineDiagonalRight == "XMAS" || lineDiagonalRight == "SAMX")
                         xmasCounter++;
                 }
+                // Only check rays that go down and diagonal to the left
+                if (c > lines[l].size() - 4) {
+                    std::string lineDown = std::string(1,lines[l][c]) + lines[l+1][c] + lines[l+2][c] + lines[l+3][c];
+                    std::string lineDiagonalLeft = std::string(1, lines[l][c]) + lines[l+1][c-1] + lines[l+2][c-2] + lines[l+3][c-3];
+                    if (lineDown == "XMAS" || lineDown == "SAMX")
+                        xmasCounter++;
+
+                    if (lineDiagonalLeft == "XMAS" || lineDiagonalLeft == "SAMX")
+                        xmasCounter++;
+                }
+
                 // In this case check rays that go down, diagonal to the right and left
-                if (c <= lines[l].size() - 4 && c >= 4) {
-                    std::println("check lines down to right and left {0}", lines[l][c]);
+                if (c <= lines[l].size() - 4 && c >= 3) {
+                    std::string lineDown = std::string(1,lines[l][c]) + lines[l+1][c] + lines[l+2][c] + lines[l+3][c];
+                    std::string lineDiagonalRight = std::string(1, lines[l][c]) + lines[l+1][c+1] + lines[l+2][c+2] + lines[l+3][c+3];
+                    std::string lineDiagonalLeft = std::string(1, lines[l][c]) + lines[l+1][c-1] + lines[l+2][c-2] + lines[l+3][c-3];
+                    if (lineDown == "XMAS" || lineDown == "SAMX")
+                        xmasCounter++;
+
+                    if (lineDiagonalRight == "XMAS" || lineDiagonalRight == "SAMX")
+                        xmasCounter++;
+
+                    if (lineDiagonalLeft == "XMAS" || lineDiagonalLeft == "SAMX")
+                        xmasCounter++;
+
                 }
             }
             // check if horizontally the text says xmas or samx up until 4 chars before the edge
@@ -46,7 +60,6 @@ int findxmas(const std::vector<std::string> &lines) {
                 
             }
         }
-        return 0;
     }
 
     return xmasCounter;
@@ -55,7 +68,7 @@ int findxmas(const std::vector<std::string> &lines) {
 int main() {
     auto start = std::chrono::high_resolution_clock::now();
 
-    std::ifstream file("test.txt");
+    std::ifstream file("input.txt");
 
     if (!file.is_open()) {
         throw std::runtime_error("failed to open file");
@@ -69,7 +82,7 @@ int main() {
     
     int res = findxmas(lines);
         
-    std::println("mul() result: {0}", res);
+    std::println("xmas count: {0}", res);
 
     auto end = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
