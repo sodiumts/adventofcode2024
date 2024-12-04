@@ -3,28 +3,23 @@
 #include <vector>
 #include <stdexcept>
 #include <chrono>
-#include <cmath>
 #include <cctype>
-#include <utility>
 #include <print>
 
 
 int findxmas(const std::vector<std::string> &lines) {
     int xmasCounter = 0;
-    for (int l = 0; l < lines.size(); l++) {
-        for(int c = 0; c < lines[l].size(); c++) {
-            if (lines.size() - l >= 3) {
-                if (c <= lines[l].size() - 3) {
-                    std::string lineDiagonalRight = std::string(1, lines[l][c]) + lines[l+1][c+1] + lines[l+2][c+2];
-                    std::string lineDiagonalLeft = std::string(1, lines[l][c+2]) + lines[l+1][c+1] + lines[l+2][c];
-                    if ((lineDiagonalRight == "MAS" || lineDiagonalRight == "SAM") && (lineDiagonalLeft == "MAS" || lineDiagonalLeft == "SAM"))
-                        xmasCounter++;
-
-                }
-            }
+    for (int l = 1; l < lines.size() - 1; l++) {
+        std::size_t indexOfA = 0;
+        while((indexOfA = lines[l].find('A', indexOfA)) != std::string::npos) {
+            std::string lineDown = std::string(1,lines[l-1][indexOfA-1]) + lines[l][indexOfA] + lines[l+1][indexOfA+1];
+            std::string lineUp = std::string(1,lines[l-1][indexOfA+1]) + lines[l][indexOfA] + lines[l+1][indexOfA-1];
+            if ((lineDown == "MAS" || lineDown == "SAM") && (lineUp == "MAS" || lineUp == "SAM"))
+                xmasCounter++;
+            
+            indexOfA++;
         }
     }
-
     return xmasCounter;
 }
 
@@ -45,7 +40,7 @@ int main() {
     
     int res = findxmas(lines);
         
-    std::println("xmas count: {0}", res);
+    std::println("Mas  count: {0}", res);
 
     auto end = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
