@@ -5,22 +5,47 @@
 #include <chrono>
 #include <cctype>
 #include <print>
+#include <unordered_map>
+#include <algorithm>
+bool isSafe(const std::unordered_map<int, std::vector<int>> &rules, const std::vector<int> &line) {
+    for (int i = line.size() - 1; i >= 0; i--) {
+        for (int j = i-1; j >= 0; j--) {
+            std::vector<int> ref;
+            try {
+                ref = rules.at(line[j]);
+            } catch (const std::out_of_range& e) {
+                return false;
+            } 
+            if(std::find(ref.begin(), ref.end(), line[i]) == ref.end()) {
+                return false;
+            }
+        }
+    }
+    return true;
+}
 
-int middles(const std::vector<std::pair<int, int>> &pairs, const std::vector<std::vector<int>> &updates) {
-    
-    return 0;
+int middles(const std::unordered_map<int, std::vector<int>> &rules, const std::vector<std::vector<int>> &updates) {
+    int resultSum = 0;
+    for (const auto &line: updates) {
+        bool is = isSafe(rules, line); 
+        if (is) {
+            resultSum += line[line.size() / 2];
+        }
+    }
+
+    return resultSum;
 }
 
 int main() {
     auto start = std::chrono::high_resolution_clock::now();
 
-    std::ifstream file("test.txt");
+    std::ifstream file("input.txt");
 
     if (!file.is_open()) {
         throw std::runtime_error("failed to open file");
     }
     
-    std::vector<std::pair<int, int>> pairs;
+    std::unordered_map<int, std::vector<int>> rules;
     std::vector<std::vector<int>> updates;
 
     bool firstPart = true;
@@ -34,7 +59,7 @@ int main() {
             int splitter = line.find("|");
             int firstNum = std::stoi(line.substr(0, splitter));
             int secondNum = std::stoi(line.substr(splitter + 1));
-            pairs.push_back(std::make_pair(firstNum, secondNum));
+            rules[firstNum].push_back(secondNum);
         } else {
             std::size_t pos = 0;
             std::size_t lastPos = 0;
@@ -51,9 +76,9 @@ int main() {
         }
     }
     
-
+    
         
-   std::println("Mas  count: {0}", middles(pairs, updates));
+    std::println("Middle page sum: {0}", middles(rules, updates));
 
     auto end = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
