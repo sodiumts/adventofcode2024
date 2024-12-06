@@ -5,14 +5,14 @@
 #include <chrono>
 #include <cctype>
 #include <print>
-#include <unordered_map>
 #include <algorithm>
 #include <utility>
 #include <unordered_set>
 #include <functional>
 #include <tuple>
-#include <mutex>
 #include <thread>
+#include <future>
+
 struct tuple_hash {
     template <class T1, class T2, class T3>
     std::size_t operator()(const std::tuple<T1, T2, T3>& tuple) const {
@@ -118,15 +118,39 @@ std::unordered_set<std::pair<int, int>, pair_hash> mapOutFirstPath(std::vector<s
 }
 
 int mapOutPath(std::vector<std::string> &map, struct Guard &guard) {
-    int blockCount = 0;
     auto firstPath = mapOutFirstPath(map, guard);
     
-    for (auto &path: firstPath) {
-        std::vector<std::string> copyMap(map);
-        copyMap[path.second][path.first] = '#';
-        if(testBlock(copyMap, guard)) {
-            blockCount++;
+    auto processChunk = [&](auto start, auto end) {
+        int lcount = 0;
+        for (auto it = start; it != end; it++) {
+            std::vector<std::string> copyMap(map);
+            copyMap[it->second][it->first] = '#';
+            if(testBlock(copyMap, guard)) {
+                lcount++;
+            }
         }
+        return lcount;
+    };
+
+    const size_t numThreads = std::thread::hardware_concurrency();
+    std::vector<std::future<int>> futures;
+    size_t chunkSize = (firstPath.size() + numThreads - 1) / numThreads;
+
+    auto it = firstPath.begin();
+    for (size_t i = 0; i < numThreads && it != firstPath.end(); ++i) {
+        auto start = it;
+        
+        size_t distance = static_cast<size_t>(std::distance(it, firstPath.end()));
+        
+        std::advance(it, std::min(chunkSize, distance));
+        auto end = it;
+
+        futures.emplace_back(std::async(std::launch::async, processChunk, start, end));
+    }
+
+    int blockCount = 0;
+    for (auto &f : futures) {
+        blockCount += f.get();
     }
 
     return blockCount;
