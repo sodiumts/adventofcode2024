@@ -27,7 +27,7 @@ struct Guard {
     int y;
     int rotation; // 0, 1, 2, 3
 };
-bool testBlock(std::vector<std::string> &map, struct Guard &guard){
+bool testBlock(std::vector<std::string> &map, struct Guard guard){
     std::unordered_set<std::tuple<int, int, int>, tuple_hash> visitedPositions;
     while(true) {
         std::pair<int, int> nextPosition;
@@ -69,52 +69,67 @@ bool testBlock(std::vector<std::string> &map, struct Guard &guard){
     return false;
 }
 
+struct pair_hash {
+    template <typename T1, typename T2>
+    std::size_t operator()(const std::pair<T1, T2>& p) const {
+        std::size_t h1 = std::hash<T1>()(p.first);
+        std::size_t h2 = std::hash<T2>()(p.second);
+        return h1 ^ (h2 << 1); // Combine hashes
+    }
+};
+
+std::unordered_set<std::pair<int, int>, pair_hash> mapOutFirstPath(std::vector<std::string> &map, struct Guard guard) {
+    std::unordered_set<std::pair<int, int>, pair_hash> visitedPositions;
+    visitedPositions.insert({guard.x, guard.y});
+    while(true) {
+        std::pair<int, int> nextPosition;
+        switch(guard.rotation) {
+            case 0:
+                nextPosition.first = guard.x;
+                nextPosition.second = guard.y - 1;
+            break;
+            case 1:
+                nextPosition.first = guard.x + 1;
+                nextPosition.second = guard.y;
+            break;
+            case 2:
+                nextPosition.first = guard.x;
+                nextPosition.second = guard.y + 1;
+            break;
+            case 3:
+                nextPosition.first = guard.x - 1;
+                nextPosition.second = guard.y;
+            break;
+        }
+        if(nextPosition.first < 0 || nextPosition.first >= map[0].size() || nextPosition.second < 0 || nextPosition.second >= map.size()) {
+            break;
+        }
+
+        char nextChar = map[nextPosition.second][nextPosition.first];
+        if(nextChar == '.') {
+            guard.x = nextPosition.first;
+            guard.y = nextPosition.second;
+            visitedPositions.insert({guard.x, guard.y});
+        } else {
+           guard.rotation = (guard.rotation + 1) % 4; 
+        }
+    }
+    return visitedPositions;
+}
 
 int mapOutPath(std::vector<std::string> &map, struct Guard &guard) {
-    const int numThreads = std::thread::hardware_concurrency();
-    std::vector<std::thread> threads;
-    std::mutex countMutex;
-    int count = 0;
-
-    // Function to process a subset of rows
-    auto processRows = [&](int startRow, int endRow) {
-        int localCount = 0;
-        for (int i = startRow; i < endRow; i++) {
-            for (int j = 0; j < map[i].size(); j++) {
-                if (map[i][j] == '.') {
-                    std::vector<std::string> mapCopy(map);
-                    mapCopy[i][j] = '#';
-                    struct Guard guardCopy = guard;
-                    if (testBlock(mapCopy, guardCopy)) {
-                        localCount++;
-                    }
-                }
-            }
+    int blockCount = 0;
+    auto firstPath = mapOutFirstPath(map, guard);
+    
+    for (auto &path: firstPath) {
+        std::vector<std::string> copyMap(map);
+        copyMap[path.second][path.first] = '#';
+        if(testBlock(copyMap, guard)) {
+            blockCount++;
         }
-        // Safely update the global count
-        std::lock_guard<std::mutex> lock(countMutex);
-        count += localCount;
-    };
-
-    // Divide the map into chunks and spawn threads
-    int rowsPerThread = map.size() / numThreads;
-    int remainingRows = map.size() % numThreads;
-
-    for (int t = 0; t < numThreads; t++) {
-        int startRow = t * rowsPerThread;
-        int endRow = startRow + rowsPerThread + (t == numThreads - 1 ? remainingRows : 0);
-
-        threads.emplace_back(processRows, startRow, endRow);
     }
 
-    // Wait for all threads to finish
-    for (std::thread &thread : threads) {
-        thread.join();
-    }
-
-    return count;
-
-
+    return blockCount;
 }
 
 int main() {
