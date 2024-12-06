@@ -78,7 +78,6 @@ int mapOutPath(std::vector<std::string> &map, struct Guard &guard) {
                 mapCopy[i][j] = '#';
                 struct Guard guardCopy = guard;
                 if(testBlock(mapCopy, guardCopy)) {
-                    std::println("Block at {0}, {1}", j, i);
                     count++;
                 }
             }
