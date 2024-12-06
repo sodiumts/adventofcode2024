@@ -11,6 +11,7 @@
 #include <unordered_set>
 #include <functional>
 #include <tuple>
+#include <mutex>
 #include <thread>
 struct tuple_hash {
     template <class T1, class T2, class T3>
