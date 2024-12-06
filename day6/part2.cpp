@@ -7,75 +7,86 @@
 #include <print>
 #include <unordered_map>
 #include <algorithm>
+#include <utility>
+#include <unordered_set>
+#include <functional>
+#include <tuple>
 
-bool isSafe(const std::unordered_map<int, std::vector<int>> &rules, const std::vector<int> &line) {
-    for (int i = line.size() - 1; i >= 0; i--) {
-        for (int j = i-1; j >= 0; j--) {
-            std::vector<int> ref;
-            try {
-                ref = rules.at(line[j]);
-            } catch (const std::out_of_range& e) {
-                return false;
-            } 
-            if(std::find(ref.begin(), ref.end(), line[i]) == ref.end()) {
-                return false;
-            }
-        }
+struct tuple_hash {
+    template <class T1, class T2, class T3>
+    std::size_t operator()(const std::tuple<T1, T2, T3>& tuple) const {
+        auto h1 = std::hash<T1>{}(std::get<0>(tuple));
+        auto h2 = std::hash<T2>{}(std::get<1>(tuple));
+        auto h3 = std::hash<T3>{}(std::get<2>(tuple));
+        return h1 ^ (h2 << 1) ^ (h3 << 2);
     }
-    return true;
-}
-
-int fixBadUpdate(const std::unordered_map<int, std::vector<int>> &rules, std::vector<int> &line) {
-    bool swapped;
-
-    for (int i = 0; i < line.size() - 1; i++) {
-        swapped = false;
-        for (int j = 0; j < line.size() - i - 1; j++) {
-            std::vector<int> rulesAtNext;
-            try {
-                rulesAtNext = rules.at(line[j + 1]);
-            } catch (const std::out_of_range &e) {
-                continue;    
-            }
-            if (std::find(rulesAtNext.begin(), rulesAtNext.end(), line[j]) != rulesAtNext.end()) {
-                int temp = line[j + 1];
-                line[j + 1] = line[j];
-                line[j] = temp;
-                swapped = true;
-            }
+};
+struct Guard {
+    int x;
+    int y;
+    int rotation; // 0, 1, 2, 3
+};
+bool testBlock(std::vector<std::string> &map, struct Guard &guard){
+    std::unordered_set<std::tuple<int, int, int>, tuple_hash> visitedPositions;
+    while(true) {
+        std::pair<int, int> nextPosition;
+        std::tuple<int, int, int> currentPosition = std::make_tuple(guard.x, guard.y, guard.rotation);
+        if(visitedPositions.find(currentPosition) != visitedPositions.end()) {
+            return true;
         }
-
-        if (!swapped) {
+        visitedPositions.insert(currentPosition);
+        switch(guard.rotation) {
+            case 0:
+                nextPosition.first = guard.x;
+                nextPosition.second = guard.y - 1;
+            break;
+            case 1:
+                nextPosition.first = guard.x + 1;
+                nextPosition.second = guard.y;
+            break;
+            case 2:
+                nextPosition.first = guard.x;
+                nextPosition.second = guard.y + 1;
+            break;
+            case 3:
+                nextPosition.first = guard.x - 1;
+                nextPosition.second = guard.y;
             break;
         }
+        if(nextPosition.first < 0 || nextPosition.first >= map[0].size() || nextPosition.second < 0 || nextPosition.second >= map.size()) {
+            break;
+        }
+
+        char nextChar = map[nextPosition.second][nextPosition.first];
+        if(nextChar == '.') {
+            guard.x = nextPosition.first;
+            guard.y = nextPosition.second;
+        }  else {
+            guard.rotation = (guard.rotation + 1) % 4;
+        }
     }
-    //Do a check if line is now valid for debugging
-    
-    // if(isSafe(rules, line)) {
-    //   std::println("This line is safe!");
-    // } else {
-    //   throw std::runtime_error("Line not safe!");
-    // }
-    return line[line.size() / 2];
+    return false;
 }
 
-int middles(const std::unordered_map<int, std::vector<int>> &rules, std::vector<std::vector<int>> &updates) {
-    for(auto [key, value]: rules) {
-        std::print("key {0}   :: ", key);
-        for (auto val: value) {
-            std::print("{0},", val);
+
+int mapOutPath(std::vector<std::string> &map, struct Guard &guard) {
+    int count = 0;
+    for (int i = 0; i < map.size(); i++) {
+        for(int j = 0; j < map[i].size(); j++) {
+            if (map[i][j] == '.') {
+                std::vector<std::string> mapCopy(map);
+                mapCopy[i][j] = '#';
+                struct Guard guardCopy = guard;
+                if(testBlock(mapCopy, guardCopy)) {
+                    std::println("Block at {0}, {1}", j, i);
+                    count++;
+                }
+            }
         }
-        std::println();
     }
-    std::println();
-    int resultSum = 0;
-    for (auto &line: updates) {
-        bool is = isSafe(rules, line); 
-        if (!is) {
-            resultSum += fixBadUpdate(rules, line);
-        }
-    }
-    return resultSum;
+
+
+    return count;
 }
 
 int main() {
@@ -87,40 +98,23 @@ int main() {
         throw std::runtime_error("failed to open file");
     }
     
-    std::unordered_map<int, std::vector<int>> rules;
-    std::vector<std::vector<int>> updates;
-
-    bool firstPart = true;
+    std::vector<std::string> map;
     std::string line;
+    struct Guard guard = { 0, 0, 0 }; 
+    int i = 0;
     while(std::getline(file, line)) {
-        if (line.empty() && std::all_of(line.begin(), line.end(), ::isspace)) {
-            firstPart = false;
-            continue;
+        map.push_back(line);        
+        size_t guardIndex = 0;
+        if((guardIndex = line.find('^', guardIndex)) != std::string::npos) {
+            guard.x = guardIndex;
+            guard.y = i;
+            map[guard.y][guard.x] = '.';
         }
-        if (firstPart) {
-            int splitter = line.find("|");
-            int firstNum = std::stoi(line.substr(0, splitter));
-            int secondNum = std::stoi(line.substr(splitter + 1));
-            rules[firstNum].push_back(secondNum);
-        } else {
-            std::size_t pos = 0;
-            std::size_t lastPos = 0;
-            std::vector<int> nums;
-            while((pos = line.find(",", pos)) != std::string::npos) {
-                int num = std::stoi(line.substr(lastPos, pos));
-                nums.push_back(num);
-                int idx = 0;
-                lastPos = pos + 1;
-                pos++;
-            }
-            nums.push_back(std::stoi(line.substr(lastPos)));
-            updates.push_back(nums);
-        }
+        i++;
     }
     
-    
         
-    std::println("Middle page sum: {0}", middles(rules, updates));
+    std::println("VisitedPositions: {0}", mapOutPath(map, guard));
 
     auto end = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
