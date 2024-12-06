@@ -11,7 +11,7 @@
 #include <unordered_set>
 #include <functional>
 #include <tuple>
-
+#include <thread>
 struct tuple_hash {
     template <class T1, class T2, class T3>
     std::size_t operator()(const std::tuple<T1, T2, T3>& tuple) const {
@@ -70,22 +70,50 @@ bool testBlock(std::vector<std::string> &map, struct Guard &guard){
 
 
 int mapOutPath(std::vector<std::string> &map, struct Guard &guard) {
+    const int numThreads = std::thread::hardware_concurrency();
+    std::vector<std::thread> threads;
+    std::mutex countMutex;
     int count = 0;
-    for (int i = 0; i < map.size(); i++) {
-        for(int j = 0; j < map[i].size(); j++) {
-            if (map[i][j] == '.') {
-                std::vector<std::string> mapCopy(map);
-                mapCopy[i][j] = '#';
-                struct Guard guardCopy = guard;
-                if(testBlock(mapCopy, guardCopy)) {
-                    count++;
+
+    // Function to process a subset of rows
+    auto processRows = [&](int startRow, int endRow) {
+        int localCount = 0;
+        for (int i = startRow; i < endRow; i++) {
+            for (int j = 0; j < map[i].size(); j++) {
+                if (map[i][j] == '.') {
+                    std::vector<std::string> mapCopy(map);
+                    mapCopy[i][j] = '#';
+                    struct Guard guardCopy = guard;
+                    if (testBlock(mapCopy, guardCopy)) {
+                        localCount++;
+                    }
                 }
             }
         }
+        // Safely update the global count
+        std::lock_guard<std::mutex> lock(countMutex);
+        count += localCount;
+    };
+
+    // Divide the map into chunks and spawn threads
+    int rowsPerThread = map.size() / numThreads;
+    int remainingRows = map.size() % numThreads;
+
+    for (int t = 0; t < numThreads; t++) {
+        int startRow = t * rowsPerThread;
+        int endRow = startRow + rowsPerThread + (t == numThreads - 1 ? remainingRows : 0);
+
+        threads.emplace_back(processRows, startRow, endRow);
     }
 
+    // Wait for all threads to finish
+    for (std::thread &thread : threads) {
+        thread.join();
+    }
 
     return count;
+
+
 }
 
 int main() {
