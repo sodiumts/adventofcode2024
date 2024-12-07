@@ -75,7 +75,10 @@ int main() {
         while (ss >> num) {
             numLine.push_back(num);
         }
-
+        for (int num: numLine) {
+            std::print("{}, ", num);
+        }
+        std::println();
         numbers.push_back(numLine);
     }
     uint64_t totalResult = getCalibrationResult(numbers);
