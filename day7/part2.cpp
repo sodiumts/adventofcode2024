@@ -14,9 +14,10 @@ uint64_t concatNums(uint64_t firstNum, uint64_t secondNum) {
     return firstNum * static_cast<uint64_t>(std::pow(10, numDigits)) + secondNum;
 }
 
-bool testIfPossible(const std::vector<uint64_t> &numbers, uint64_t result, uint64_t index, uint64_t current) {
-    if (index == numbers.size())
+bool testIfPossible(const std::vector<uint64_t>& numbers, uint64_t result, uint64_t index, uint64_t current) {
+    if (index == numbers.size()) {
         return current == result;
+    }
 
     if (testIfPossible(numbers, result, index + 1, current + numbers[index]))
         return true;
@@ -26,7 +27,7 @@ bool testIfPossible(const std::vector<uint64_t> &numbers, uint64_t result, uint6
 
     if (testIfPossible(numbers, result, index + 1, concatNums(current, numbers[index])))
         return true;
-
+    
     return false;
 }
 
@@ -34,8 +35,10 @@ uint64_t getCalibrationResult(const std::vector<std::vector<uint64_t>> &numbers)
     uint64_t result = 0;
 
     for (const auto &numLine : numbers) {
-        uint64_t res = numLine[0];
-        if (testIfPossible(numLine, res, 1, 0)) 
+        uint64_t res = numLine[0];  
+        uint64_t current = numLine[1];
+        
+        if (testIfPossible(numLine, res, 2, current)) 
             result += res;
     }
 
@@ -45,7 +48,7 @@ uint64_t getCalibrationResult(const std::vector<std::vector<uint64_t>> &numbers)
 int main() {
     auto start = std::chrono::high_resolution_clock::now();
 
-    std::ifstream file("test.txt");
+    std::ifstream file("input.txt");
     if (!file.is_open()) {
         throw std::runtime_error("Failed to open file");
     }
