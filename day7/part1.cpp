@@ -79,6 +79,4 @@ int main() {
     std::println("Time taken: {0} nanoseconds = {1} milliseconds", duration.count(), duration.count() / 1e6);
     file.close();
     return 0;
-
-    return 0;
 }
