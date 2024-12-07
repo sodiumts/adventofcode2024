@@ -8,6 +8,8 @@
 #include <print>
 #include <cmath>
 #include <cstdint>
+#include <atomic>
+#include <thread> 
 
 uint64_t concatNums(uint64_t firstNum, uint64_t secondNum) {
     uint64_t numDigits = std::log10(secondNum) + 1;
@@ -15,9 +17,8 @@ uint64_t concatNums(uint64_t firstNum, uint64_t secondNum) {
 }
 
 bool testIfPossible(const std::vector<uint64_t>& numbers, uint64_t result, uint64_t index, uint64_t current) {
-    if (index == numbers.size()) {
+    if (index == numbers.size()) 
         return current == result;
-    }
 
     if (testIfPossible(numbers, result, index + 1, current + numbers[index]))
         return true;
@@ -31,20 +32,38 @@ bool testIfPossible(const std::vector<uint64_t>& numbers, uint64_t result, uint6
     return false;
 }
 
-uint64_t getCalibrationResult(const std::vector<std::vector<uint64_t>> &numbers) {
-    uint64_t result = 0;
+uint64_t getCalibrationResult(const std::vector<std::vector<uint64_t>>& numbers) {
+    std::atomic<uint64_t> result(0);
+    
+    auto processChunk = [&](size_t start, size_t end) {
+        uint64_t localResult = 0;
+        for (size_t i = start; i < end; i++) {
+            const auto &numLine = numbers[i];
+            uint64_t res = numLine[0];  
+            uint64_t current = numLine[1];
+            
+            if (testIfPossible(numLine, res, 2, current)) 
+                localResult += res;
+        }
+        result += localResult;
+    };
+    
+    size_t numThreads = std::thread::hardware_concurrency();
+    size_t chunkSize = numbers.size() / numThreads;
+    std::vector<std::thread> threads;
 
-    for (const auto &numLine : numbers) {
-        uint64_t res = numLine[0];  
-        uint64_t current = numLine[1];
-        
-        if (testIfPossible(numLine, res, 2, current)) 
-            result += res;
+    for (size_t i = 0; i < numThreads; i++) {
+        size_t start = i * chunkSize;
+        size_t end = (i == numThreads - 1) ? numbers.size() : start + chunkSize;
+        threads.push_back(std::thread(processChunk, start, end));
     }
 
-    return result;
-}
+    for (auto& t : threads) {
+        t.join();
+    }
 
+    return result.load();
+}
 int main() {
     auto start = std::chrono::high_resolution_clock::now();
 
