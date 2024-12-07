@@ -6,10 +6,12 @@
 #include <chrono>
 #include <cctype>
 #include <print>
-
+#include <cmath>
+#include <cstdint>
 
 uint64_t concatNums(uint64_t firstNum, uint64_t secondNum) {
-    return std::stoull(std::to_string(firstNum) + std::to_string(secondNum));
+    uint64_t numDigits = std::log10(secondNum) + 1;
+    return firstNum * static_cast<uint64_t>(std::pow(10, numDigits)) + secondNum;
 }
 
 bool testIfPossible(const std::vector<uint64_t> &numbers, uint64_t result, uint64_t index, uint64_t current) {
@@ -22,9 +24,9 @@ bool testIfPossible(const std::vector<uint64_t> &numbers, uint64_t result, uint6
     if (testIfPossible(numbers, result, index + 1, current * numbers[index]))
         return true;
 
-    if(testIfPossible(numbers, result, index + 1, concatNums(current, numbers[index])))
+    if (testIfPossible(numbers, result, index + 1, concatNums(current, numbers[index])))
         return true;
-    
+
     return false;
 }
 
@@ -33,8 +35,7 @@ uint64_t getCalibrationResult(const std::vector<std::vector<uint64_t>> &numbers)
 
     for (const auto &numLine : numbers) {
         uint64_t res = numLine[0];
-        std::vector<uint64_t> list(numLine.begin() + 1, numLine.end());
-        if (testIfPossible(list, res, 0, 0))
+        if (testIfPossible(numLine, res, 1, 0)) 
             result += res;
     }
 
@@ -44,7 +45,7 @@ uint64_t getCalibrationResult(const std::vector<std::vector<uint64_t>> &numbers)
 int main() {
     auto start = std::chrono::high_resolution_clock::now();
 
-    std::ifstream file("input.txt");
+    std::ifstream file("test.txt");
     if (!file.is_open()) {
         throw std::runtime_error("Failed to open file");
     }
@@ -75,10 +76,6 @@ int main() {
         while (ss >> num) {
             numLine.push_back(num);
         }
-        for (int num: numLine) {
-            std::print("{}, ", num);
-        }
-        std::println();
         numbers.push_back(numLine);
     }
     uint64_t totalResult = getCalibrationResult(numbers);
