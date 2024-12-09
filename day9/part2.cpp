@@ -1,3 +1,4 @@
+#include <cstdint>
 #include <fstream>
 #include <string>
 #include <vector>
@@ -8,7 +9,8 @@
 #include <utility>
 #include <unordered_map>
 #include <unordered_set>
-
+#include <queue>
+#include <algorithm>
 struct pair_hash {
     template <typename T1, typename T2>
     std::size_t operator()(const std::pair<T1, T2>& p) const {
@@ -18,64 +20,75 @@ struct pair_hash {
     }
 };
 
-std::unordered_set<std::pair<int, int>, pair_hash> calculateInterferencePoint(const std::pair<int, int> &pointA, const std::pair<int, int> &pointB, int boundX, int boundY) {
-    std::unordered_set<std::pair<int, int>, pair_hash> intPoints;
-    int deltaX = pointA.first - pointB.first;
-    int deltaY = pointA.second - pointB.second;
-    
-    int pointX = pointA.first;
-    int pointY = pointA.second;
-    while(true) {
-        pointX = pointX  + deltaX;
-        pointY = pointY + deltaY;
-        if (pointX >= 0 && pointX < boundX && pointY >= 0 && pointY < boundY) {
-            intPoints.insert({pointX, pointY});
+std::vector<std::vector<int>> getFileIDLength(const std::vector<int> &disk) {
+    std::vector<std::vector<int>> idLength;
+    int idCounter = 0;
+    int idIndex = 0;
+    bool alter = false;
+    for (int i = 0; i < disk.size(); i++) {
+        if(alter){
+            idIndex += disk[i];
+            alter = false;
         } else {
-            break;
+            idLength.push_back({idCounter, disk[i], idIndex});
+            idCounter++;
+            idIndex += disk[i];
+            alter = true;
         }
-    }
-    
-    pointX = pointA.first;
-    pointY = pointA.second;
-    while(true) {
-        pointX = pointX  - deltaX;
-        pointY = pointY - deltaY;
-        if (pointX >= 0 && pointX < boundX && pointY >= 0 && pointY < boundY) {
-            intPoints.insert({pointX, pointY});
-        } else {
-            break;
-        }
-    }
+    } 
 
-
-    return intPoints;
+    return idLength;
 }
 
-int getUniquePoints(const std::unordered_map<char, std::vector<std::pair<int, int>>> &antennas, int boundX, int boundY) {
-    std::unordered_set<std::pair<int, int>, pair_hash> points;
+std::vector<std::pair<int,int>> getFreeSpaces(const std::vector<int> &disk) {
+    std::vector<std::pair<int,int>> freeSpaces;
+
+    int freeIndex = 0;
+    bool alter = false;
+    for (int i = 0; i < disk.size(); i++) {
+        if (alter) {
+            if (disk[i] == 0) {
+                alter = false;
+                continue;
+            }
+            freeSpaces.push_back({freeIndex, disk[i]});
+            alter = false;
+        } else {
+            alter = true;
+        }
+        freeIndex += disk[i];
+    }
+    return freeSpaces;
+}
+
+uint64_t calculateChecksum(const std::vector<int> &diskMap) {
+    uint64_t checksum = 0;
+    auto idLength = getFileIDLength(diskMap);
+    auto freeSpaces = getFreeSpaces(diskMap);
     
-    for(auto &entry: antennas) {
-        for (int i = 0; i < entry.second.size(); i++) {
-            for (int j = i + 1; j < entry.second.size(); j++) {
-                std::pair<int, int> pointA = entry.second[i];
-                std::pair<int, int> pointB = entry.second[j];
-            
-                auto p1 = calculateInterferencePoint(pointA, pointB, boundX, boundY);
-                auto p2 = calculateInterferencePoint(pointB, pointA, boundX, boundY);
-                for (auto &p: p1) {
-                    points.insert(p);
-                }
-                for (auto &p: p2) {
-                    points.insert(p);
+    std::reverse(idLength.begin(), idLength.end());
+    for(auto &pair: idLength) {
+        for (auto &space: freeSpaces) {
+            if(pair[1] <= space.second) {
+                if(space.first < pair[2]) {
+
+                    pair[2] = space.first;
+                    space.second -= pair[1];
+                    space.first += pair[1]; 
+                    break;
                 }
             }
         }
     }
 
+    for (auto &pair: idLength) {
+        for (int i = 0; i < pair[1]; i++) {
+            checksum += pair[0] * (pair[2] + i);
+        }
+    }
 
-    return points.size();
+    return checksum;
 }
-
 int main() {
     auto start = std::chrono::high_resolution_clock::now();
 
@@ -86,21 +99,15 @@ int main() {
     
     std::unordered_map<char, std::vector<std::pair<int, int>>> antennas;
     
-    std::vector<std::string> lines;
+    std::vector<int> diskNum;
     std::string line;
     while(getline(file, line)) {
-        lines.push_back(line);
-    }
-    
-    for(int i = 0; i < lines.size(); i++) {
-        for (int j = 0; j < lines[i].size(); j++) {
-            if(lines[i][j] != '.') {
-                antennas[lines[i][j]].push_back({j, i});            
-            }
-        }
+       for (char c: line) {
+            diskNum.push_back(c - '0');
+        } 
     }
 
-    std::println("Resonance Point Count: {}", getUniquePoints(antennas, lines[0].size(), lines.size()));
+    std::println("Checksum: {}", calculateChecksum(diskNum)); 
     
     auto end = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
