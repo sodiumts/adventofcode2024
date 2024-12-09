@@ -8,17 +8,6 @@
 #include <print>
 #include <utility>
 #include <unordered_map>
-#include <unordered_set>
-#include <queue>
-#include <algorithm>
-struct pair_hash {
-    template <typename T1, typename T2>
-    std::size_t operator()(const std::pair<T1, T2>& p) const {
-        std::size_t h1 = std::hash<T1>()(p.first);
-        std::size_t h2 = std::hash<T2>()(p.second);
-        return h1 ^ (h2 << 1);
-    }
-};
 
 std::vector<std::vector<int>> getFileIDLength(const std::vector<int> &disk) {
     std::vector<std::vector<int>> idLength;
