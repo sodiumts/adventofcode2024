@@ -5,8 +5,6 @@
 #include <chrono>
 #include <cctype>
 #include <print>
-#include <utility>
-#include <unordered_map>
 #include <queue>
 
 
@@ -104,7 +102,6 @@ int main() {
         throw std::runtime_error("Failed to open file");
     }
     
-    std::unordered_map<char, std::vector<std::pair<int, int>>> antennas;
     
     std::vector<int> diskNum;
     std::string line;

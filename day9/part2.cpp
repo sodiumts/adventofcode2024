@@ -7,7 +7,6 @@
 #include <cctype>
 #include <print>
 #include <utility>
-#include <unordered_map>
 
 std::vector<std::vector<int>> getFileIDLength(const std::vector<int> &disk) {
     std::vector<std::vector<int>> idLength;
@@ -86,7 +85,6 @@ int main() {
         throw std::runtime_error("Failed to open file");
     }
     
-    std::unordered_map<char, std::vector<std::pair<int, int>>> antennas;
     
     std::vector<int> diskNum;
     std::string line;
