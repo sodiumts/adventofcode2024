@@ -47,7 +47,6 @@ int countPaths(int startX, int startY, const std::vector<std::vector<int>>& map)
     return pathCount;
 }
 
-// 
 std::string getGradientColor(int value) {
     int red = 0, green = 0, blue = 0;
 
